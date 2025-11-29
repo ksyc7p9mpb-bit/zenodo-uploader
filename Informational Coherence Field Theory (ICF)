@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+# Script para subir a Zenodo (requiere requests: pip install requests)
+import requests
+import json
+
+ZENODO_URL = "https://sandbox.zenodo.org/api"  # Cambia a "https://zenodo.org/api" para producción
+ACCESS_TOKEN = "YOUR_TOKEN_AQUI"  # De zenodo.org/account/settings/applications/tokens/new/
+
+headers = {
+    "Authorization": f"Bearer {ACCESS_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+# Paso 1: Crear nuevo depósito (reserva DOI)
+deposit_data = {
+    "metadata": {
+        "title": "Informational Coherence Field Theory (ICF): Mathematical Foundations and Empirical Verification",
+        "upload_type": "publication",
+        "publication_type": "preprint",
+        "creators": [{"name": "H., Carlos", "affiliation": "Independent Researcher, México"}],
+        "description": "A groundbreaking theory proposing an ICF...",
+        "keywords": ["quantum information", "non-local fields", "structural resonance"],
+        "license": "cc-by-4.0",
+        "communities": ["physics.gen-ph", "quant-ph"]
+    }
+}
+response = requests.post(f"{ZENODO_URL}/deposit/depositions", json=deposit_data, headers=headers)
+deposit = response.json()
+print(f"Depósito creado: {deposit['id']}")
+print(f"DOI: https://doi.org/10.5281/zenodo.{deposit['metadata']['doi']}")
+
+# Paso 2: Subir archivo
+bucket_url = deposit['links']['bucket']
+with open('ICF_Theory_v1.0.pdf', 'rb') as f:  # Tu PDF aquí
+    requests.put(f"{bucket_url}/ICF_Theory_v1.0.pdf", data=f, headers={"Content-Type": "application/pdf"})
+
+# Paso 3: Publicar
+publish_response = requests.put(f"{ZENODO_URL}/deposit/depositions/{deposit['id']}/actions/publish", headers=headers)
+print(f"Publicado! DOI final: {publish_response.json()['doi']}")
